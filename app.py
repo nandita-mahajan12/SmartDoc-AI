@@ -7,45 +7,42 @@ from sklearn.metrics.pairwise import cosine_similarity
 st.set_page_config(page_title="SmartDoc AI - RAG System")
 st.title("SmartDoc AI - Similarity Search & RAG System")
 
-# Upload PDF
 uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 
 if uploaded_file is not None:
 
     # Read PDF
-    pdf_reader = PdfReader(uploaded_file)
+    reader = PdfReader(uploaded_file)
     text = ""
 
-    for page in pdf_reader.pages:
-        page_text = page.extract_text()
-        if page_text:
-            text += page_text.replace("\n", " ")
+    for page in reader.pages:
+        content = page.extract_text()
+        if content:
+            text += content.replace("\n", " ")
 
     st.success("PDF Loaded Successfully!")
 
-    # Split text into chunks
+    # Split into chunks
     def chunk_text(text, chunk_size=500):
         chunks = []
         for i in range(0, len(text), chunk_size):
-            chunks.append(text[i:i+chunk_size])
+            chunks.append(text[i:i + chunk_size])
         return chunks
 
     chunks = chunk_text(text)
 
-    st.success("Document Indexed!")
-
-    # Create TF-IDF Vectorizer
+    # TF-IDF Vectorization
     vectorizer = TfidfVectorizer()
     vectors = vectorizer.fit_transform(chunks)
 
-    # Ask Question
-    question = st.text_input("Ask a question about this document")
+    st.success("Document Indexed!")
 
-    if question:
+    query = st.text_input("Ask a question about this document")
 
-        question_vector = vectorizer.transform([question])
-        similarities = cosine_similarity(question_vector, vectors)
-        most_similar_index = np.argmax(similarities)
+    if query:
+        query_vector = vectorizer.transform([query])
+        similarities = cosine_similarity(query_vector, vectors).flatten()
+        best_match_index = np.argmax(similarities)
 
         st.subheader("Most Relevant Context:")
-        st.write(chunks[most_similar_index])
+        st.write(chunks[best_match_index])
