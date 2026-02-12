@@ -1,17 +1,15 @@
 import streamlit as st
 import numpy as np
-from pypdf import PdfReader
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+from PyPDF2 import PdfReader
 
-st.set_page_config(page_title="SmartDoc AI - RAG System")
-st.title("SmartDoc AI - Similarity Search & RAG System")
+st.set_page_config(page_title="SmartDoc AI - Similarity Search")
+
+st.title("SmartDoc AI - Similarity Search (Fully Stable)")
 
 uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 
 if uploaded_file is not None:
 
-    # Read PDF
     reader = PdfReader(uploaded_file)
     text = ""
 
@@ -24,25 +22,27 @@ if uploaded_file is not None:
 
     # Split into chunks
     def chunk_text(text, chunk_size=500):
-        chunks = []
-        for i in range(0, len(text), chunk_size):
-            chunks.append(text[i:i + chunk_size])
-        return chunks
+        return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
 
     chunks = chunk_text(text)
-
-    # TF-IDF Vectorization
-    vectorizer = TfidfVectorizer()
-    vectors = vectorizer.fit_transform(chunks)
 
     st.success("Document Indexed!")
 
     query = st.text_input("Ask a question about this document")
 
     if query:
-        query_vector = vectorizer.transform([query])
-        similarities = cosine_similarity(query_vector, vectors).flatten()
-        best_match_index = np.argmax(similarities)
+
+        # Simple keyword-based similarity
+        scores = []
+
+        query_words = set(query.lower().split())
+
+        for chunk in chunks:
+            chunk_words = set(chunk.lower().split())
+            common_words = query_words.intersection(chunk_words)
+            scores.append(len(common_words))
+
+        best_match_index = np.argmax(scores)
 
         st.subheader("Most Relevant Context:")
         st.write(chunks[best_match_index])
